@@ -61,6 +61,7 @@ export function CentralApp({ session, onSignOut }: CentralAppProps): JSX.Element
   const [error, setError] = useState<string | null>(null);
 
   const [selectedDate, setSelectedDate] = useState(todayDateOnly());
+  const [selectedMonth, setSelectedMonth] = useState('');
   const [filter, setFilter] = useState<IntegratedFilter>({});
   const [keyword, setKeyword] = useState('');
   const [sortKey, setSortKey] = useState<IntegratedSortKey>('체크인');
@@ -103,9 +104,12 @@ export function CentralApp({ session, onSignOut }: CentralAppProps): JSX.Element
   );
 
   const visible = useMemo(() => {
-    const f = filterIntegrated(rows, { ...filter, keyword });
+    const monthlyRows = selectedMonth
+      ? rows.filter((row) => row.체크인?.startsWith(selectedMonth))
+      : rows;
+    const f = filterIntegrated(monthlyRows, { ...filter, keyword });
     return sortIntegrated(f, sortKey, sortDir);
-  }, [rows, filter, keyword, sortKey, sortDir]);
+  }, [rows, selectedMonth, filter, keyword, sortKey, sortDir]);
 
   const toggleSort = (key: IntegratedSortKey): void => {
     if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -193,7 +197,30 @@ export function CentralApp({ session, onSignOut }: CentralAppProps): JSX.Element
         </div>
 
         {/* 필터 */}
-        <div className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600" htmlFor="fm">
+              체크인 월
+            </label>
+            <div className="flex gap-1">
+              <input
+                id="fm"
+                type="month"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1.5 text-sm"
+              />
+              {selectedMonth && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedMonth('')}
+                  className="rounded border border-slate-300 bg-white px-2 text-xs text-slate-600 hover:bg-slate-50"
+                >
+                  전체
+                </button>
+              )}
+            </div>
+          </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-slate-600" htmlFor="fh">
               호텔

@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": "../..",
+    "types": ["vite/client"]
+  },
+  "include": [
+    "src",
+    "../../packages/domain/src",
+    "../../packages/data/src",
+    "../../packages/ui/src"
+  ],
+  "exclude": ["../../packages/*/src/tests"]
+}

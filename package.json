@@ -1,0 +1,36 @@
+{
+  "name": "travel-reservation-monorepo",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @travel/hotel",
+    "dev:hotel": "npm run dev --workspace @travel/hotel",
+    "dev:central": "npm run dev --workspace @travel/central",
+    "build": "npm run build --workspace @travel/hotel && npm run build --workspace @travel/central",
+    "build:hotel": "npm run build --workspace @travel/hotel",
+    "build:central": "npm run build --workspace @travel/central",
+    "preview:hotel": "npm run preview --workspace @travel/hotel",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "npm run typecheck --workspace @travel/hotel && npm run typecheck --workspace @travel/central",
+    "verify:domain": "tsx scripts/verifyDomain.ts",
+    "verify:services": "tsx scripts/verifyServices.ts"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "fake-indexeddb": "^6.0.0",
+    "jsdom": "^25.0.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}

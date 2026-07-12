@@ -1,10 +1,8 @@
 /** 앱 레이아웃 + 네비게이션 + 라우팅 */
 
-import { useState } from 'react';
 import { NavLink, Route, Routes } from 'react-router-dom';
 import { useApp } from './store';
 import { Toasts } from '../components/common/Toasts';
-import { WorkbookImportDialog } from '../components/import/WorkbookImportDialog';
 import { LoadingState } from '../components/common/states';
 import { DashboardPage } from '../pages/DashboardPage';
 import { HisSourcePage } from '../pages/HisSourcePage';
@@ -29,7 +27,6 @@ interface AppProps {
 
 export function App({ onSignOut, email }: AppProps): JSX.Element {
   const { state } = useApp();
-  const [showWorkbook, setShowWorkbook] = useState(false);
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
@@ -62,13 +59,6 @@ export function App({ onSignOut, email }: AppProps): JSX.Element {
             )}
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setShowWorkbook(true)}
-              className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-            >
-              통합문서 가져오기
-            </button>
             {email && onSignOut && (
               <>
                 <span className="hidden text-xs text-slate-500 sm:inline">
@@ -123,10 +113,6 @@ export function App({ onSignOut, email }: AppProps): JSX.Element {
         )}
       </main>
 
-      <WorkbookImportDialog
-        open={showWorkbook}
-        onClose={() => setShowWorkbook(false)}
-      />
       <Toasts />
     </div>
   );

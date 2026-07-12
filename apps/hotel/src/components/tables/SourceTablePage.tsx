@@ -15,7 +15,6 @@ import { dash } from '@travel/domain';
 import { Modal } from '../common/Modal';
 import { RowForm, type RowFormValues } from '../forms/RowForm';
 import { ImportDialog } from '../import/ImportDialog';
-import { WorkbookImportDialog } from '../import/WorkbookImportDialog';
 import { EmptyState } from '../common/states';
 
 type AnyRow = Record<string, CellValue> & { id: string; sourceOrder: number };
@@ -46,7 +45,6 @@ export function SourceTablePage({
   const [editing, setEditing] = useState<RowFormValues | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
-  const [showWorkbook, setShowWorkbook] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -155,13 +153,6 @@ export function SourceTablePage({
           className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
         >
           원본 가져오기
-        </button>
-        <button
-          type="button"
-          onClick={() => setShowWorkbook(true)}
-          className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-        >
-          통합문서 가져오기
         </button>
         <button
           type="button"
@@ -294,11 +285,6 @@ export function SourceTablePage({
         open={showImport}
         onClose={() => setShowImport(false)}
       />
-      <WorkbookImportDialog
-        open={showWorkbook}
-        onClose={() => setShowWorkbook(false)}
-      />
-
       {/* 원본 비우기 확인 */}
       <Modal open={confirmClear} onClose={() => setConfirmClear(false)}>
         <div className="space-y-4">

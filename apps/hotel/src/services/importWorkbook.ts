@@ -188,7 +188,7 @@ export function importSingleSheetFile<S extends SourceType>(
             row: null,
             message:
               `이 파일은 ${DB_LABEL[other]} 양식으로 보입니다. ` +
-              `${DB_LABEL[other]} 원본 화면에서 가져오거나, 상단 '통합문서 가져오기' 를 사용하세요.`,
+              `${DB_LABEL[other]} 원본 화면에서 가져오세요.`,
           },
         ],
         headerFailed: true,

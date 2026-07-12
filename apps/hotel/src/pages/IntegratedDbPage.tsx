@@ -42,6 +42,16 @@ const SOURCE_ROUTE: Record<SourceType, string> = {
   HANJIN: '/source/hanjin',
 };
 
+function reservationStatusRowClass(status: string): string {
+  if (status === '정상') {
+    return 'bg-emerald-50/70 hover:bg-emerald-100/70';
+  }
+  if (status === '취소') {
+    return 'bg-red-50/70 hover:bg-red-100/70';
+  }
+  return 'odd:bg-white even:bg-slate-50/40 hover:bg-sky-50';
+}
+
 export function IntegratedDbPage(): JSX.Element {
   const { state } = useApp();
   const navigate = useNavigate();
@@ -282,11 +292,9 @@ export function IntegratedDbPage(): JSX.Element {
                       `${SOURCE_ROUTE[r.sourceType]}?rowId=${encodeURIComponent(r.sourceRowId)}`,
                     )
                   }
-                  className={`cursor-pointer border-b border-slate-100 hover:bg-sky-50 ${
-                    r.중복여부 === '중복'
-                      ? 'bg-amber-50/60'
-                      : 'odd:bg-white even:bg-slate-50/40'
-                  }`}
+                  className={`cursor-pointer border-b border-slate-100 ${reservationStatusRowClass(
+                    r.예약상태,
+                  )}`}
                   title="클릭하여 원본 보기"
                 >
                   <td className="whitespace-nowrap px-3 py-1.5">

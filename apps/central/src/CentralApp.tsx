@@ -44,6 +44,12 @@ const COLUMNS: { key: IntegratedSortKey; label: string }[] = [
   { key: '중복여부', label: '중복여부' },
 ];
 
+function reservationStatusRowClass(status: string): string {
+  if (status === '정상') return 'bg-emerald-50/70';
+  if (status === '취소') return 'bg-red-50/70';
+  return 'odd:bg-white even:bg-slate-50/40';
+}
+
 interface CentralAppProps {
   session: Session | null;
   onSignOut: () => void;
@@ -297,11 +303,9 @@ export function CentralApp({ session, onSignOut }: CentralAppProps): JSX.Element
                 {visible.map((r) => (
                   <tr
                     key={r.id}
-                    className={`border-b border-slate-100 ${
-                      r.중복여부 === '중복'
-                        ? 'bg-amber-50/60'
-                        : 'odd:bg-white even:bg-slate-50/40'
-                    }`}
+                    className={`border-b border-slate-100 ${reservationStatusRowClass(
+                      r.예약상태,
+                    )}`}
                   >
                     <td className="whitespace-nowrap px-3 py-1.5 font-medium text-slate-700">
                       {dash(r.호텔)}

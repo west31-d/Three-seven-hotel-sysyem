@@ -11,17 +11,35 @@ export function detectDelimiter(text: string): string {
 }
 
 /**
+ * 탭도 콤마도 없이 공백 여러 개로 열을 맞춘 텍스트인지 확인한다.
+ * (웹페이지 표를 복사하면 탭 대신 정렬용 공백으로 붙여넣기되는 경우가 있다.)
+ */
+function looksSpaceAligned(firstLine: string): boolean {
+  return !firstLine.includes('\t') && !firstLine.includes(',') && / {2,}/.test(firstLine);
+}
+
+/** 정렬용 공백(2칸 이상) 구간을 탭으로 치환해 TSV처럼 파싱할 수 있게 만든다. */
+function convertSpaceAlignedToTabs(text: string): string {
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.replace(/ {2,}/g, '\t'))
+    .join('\n');
+}
+
+/**
  * 구분자 텍스트(CSV/TSV) -> 셀 행렬.
  * 따옴표로 감싼 필드 및 이스케이프("")를 처리하고, 빈 필드는 null 로 만든다.
  */
 export function parseDelimited(text: string, delimiter?: string): CellMatrix {
-  const delim = delimiter ?? detectDelimiter(text);
+  const firstLine = text.split(/\r?\n/, 1)[0] ?? '';
+  const source = !delimiter && looksSpaceAligned(firstLine) ? convertSpaceAlignedToTabs(text) : text;
+  const delim = delimiter ?? detectDelimiter(source);
   const rows: CellValue[][] = [];
   let field = '';
   let row: CellValue[] = [];
   let inQuotes = false;
   let i = 0;
-  const n = text.length;
+  const n = source.length;
   const pushField = (): void => {
     row.push(field.length === 0 ? null : field);
     field = '';
@@ -32,10 +50,10 @@ export function parseDelimited(text: string, delimiter?: string): CellMatrix {
     row = [];
   };
   while (i < n) {
-    const ch = text[i];
+    const ch = source[i];
     if (inQuotes) {
       if (ch === '"') {
-        if (text[i + 1] === '"') {
+        if (source[i + 1] === '"') {
           field += '"';
           i += 2;
           continue;
@@ -65,7 +83,7 @@ export function parseDelimited(text: string, delimiter?: string): CellMatrix {
     }
     if (ch === '\r') {
       pushRow();
-      if (text[i + 1] === '\n') i += 2;
+      if (source[i + 1] === '\n') i += 2;
       else i += 1;
       continue;
     }

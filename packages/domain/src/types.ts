@@ -87,6 +87,11 @@ export interface RawHanjinRow {
   Room: CellValue;
   Name: CellValue;
   Remark: CellValue;
+  /**
+   * 양식에 따라 'Remark' 대신 별도의 상태 열(신규/취소 등)로 오는 경우가 있다.
+   * Remark 와 달리 정확히 '취소'일 때만 취소로 인식하고, 그 외 값(신규 등)은 정상으로 본다.
+   */
+  Status: CellValue;
 }
 
 /** 세 원본을 하나로 다루기 위한 유니온 및 키 */

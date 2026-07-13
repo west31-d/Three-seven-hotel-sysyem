@@ -16,6 +16,8 @@ export * from './importTypes';
 export * from './sheetMapping';
 export * from './csv';
 export * from './importText';
+export * from './hisPastedLines';
+export * from './hanjinPastedLines';
 export * from './exportCsv';
 export * from './format';
 export * from './id';

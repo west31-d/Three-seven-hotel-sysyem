@@ -8,6 +8,8 @@ import { DB_LABEL } from './types';
 import { SPECS, type ImportResult, type SourceSpec } from './importTypes';
 import { mapMatrixToRows, sheetMatchesSpec, type CellMatrix } from './sheetMapping';
 import { parseDelimited } from './csv';
+import { reconstructHisCellLines } from './hisPastedLines';
+import { filterHanjinPastedLines } from './hanjinPastedLines';
 
 export { parseDelimited };
 
@@ -79,7 +81,23 @@ export function parsePastedRows<S extends SourceType>(
   referenceYear: number = currentYear(),
 ): ImportResult<RowFor<S>> {
   const spec = SPECS[source];
-  const matrix = parseDelimited(text);
+
+  // 한진은 헤더 인식 자체는 성공하더라도(공백 정렬 변환으로 헤더 줄은 파싱됨),
+  // 동반자/추가 객실 줄이 no./Tour-No 없이 데이터 행 사이에 끼어들면 열이 밀려
+  // 엉뚱한 값이 Tour-No 등으로 잘못 매핑될 수 있다. 그런 줄을 먼저 제거한다.
+  // (제거된 줄은 정규화 단계에서도 Tour-No 가 비어 있어 어차피 버려지므로 결과에는 영향 없다.)
+  const preprocessed =
+    source === 'HANJIN' ? (filterHanjinPastedLines(text) ?? text) : text;
+
+  let matrix = parseDelimited(preprocessed);
+
+  // 탭/콤마/공백 정렬 어느 것도 아니면, HIS 관리화면에서 셀 하나당 한 줄로
+  // 복사된 형태인지 시도해본다(일자별 재실 내역은 건너뛰고 예약 단위 필드만 추출).
+  if (!sheetMatchesSpec(matrix, spec) && source === 'HIS') {
+    const reconstructed = reconstructHisCellLines(text);
+    if (reconstructed) matrix = reconstructed;
+  }
+
   const finalMatrix: CellMatrix = sheetMatchesSpec(matrix, spec)
     ? matrix
     : [spec.columns.map((c) => c.header as CellValue), ...matrix];

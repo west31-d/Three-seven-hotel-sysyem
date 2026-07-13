@@ -8,14 +8,27 @@
  *  4. Nights 제거
  *  5. 인원 = null
  *  6. DB = '한진'
- *  7. 예약상태: Remark 를 '비고원본'으로 두고,
+ *  7. 예약상태:
+ *     - Status 열이 있으면(양식에 따라 Remark 대신 신규/취소 등 상태 값이 옴) 그 값을 우선 쓴다.
+ *       정확히 '취소'면 '취소', 그 외 값(신규 등, 빈 값 포함)은 모두 '정상'.
+ *     - Status 열이 없으면 기존대로 Remark 를 '비고원본'으로 두고,
  *       null / 빈 문자열 / 공백만 있는 문자열이면 '정상',
  *       그렇지 않으면 Remark 를 문자열로 변환한 값을 '그대로'(트림하지 않음) 예약상태로 사용.
- *     - 즉, 비어 있지 않은 모든 Remark 를 무조건 '취소'로 바꾸지 않는다.
+ *       (즉, 비어 있지 않은 모든 Remark 를 무조건 '취소'로 바꾸지 않는다.)
  */
 
 import type { BaseReservation, RawHanjinRow } from './types';
-import { parseHanjinPeriod, toNullableString, trimToNull } from './dateUtils';
+import { parseHanjinPeriod, toNullableString, trimToNull, isBlank } from './dateUtils';
+
+function resolveReservationStatus(row: RawHanjinRow): string {
+  if (!isBlank(row.Status)) {
+    return String(row.Status).trim() === '취소' ? '취소' : '정상';
+  }
+
+  const remarkStr =
+    row.Remark === null || row.Remark === undefined ? null : String(row.Remark);
+  return remarkStr === null || remarkStr.trim() === '' ? '정상' : remarkStr;
+}
 
 export function normalizeHanjin(
   row: RawHanjinRow,
@@ -27,11 +40,8 @@ export function normalizeHanjin(
 
   const [checkIn, checkOut] = parseHanjinPeriod(row.Period, referenceYear);
 
-  // 규칙 7: Remark -> 예약상태
-  const remarkStr =
-    row.Remark === null || row.Remark === undefined ? null : String(row.Remark);
-  const 예약상태 =
-    remarkStr === null || remarkStr.trim() === '' ? '정상' : remarkStr;
+  // 규칙 7: Status(있으면 우선) 또는 Remark -> 예약상태
+  const 예약상태 = resolveReservationStatus(row);
 
   return {
     sourceType: 'HANJIN',

@@ -130,7 +130,9 @@ export const HANJIN_SPEC: SourceSpec = {
     { field: 'Nights', header: 'Nights' },
     { field: 'Room', header: 'Room', identify: true },
     { field: 'Name', header: 'Name', identify: true },
-    { field: 'Remark', header: 'Remark' },
+    { field: 'Remark', header: 'Remark', optional: true },
+    // 양식에 따라 'Remark' 대신 신규/취소 같은 상태 값이 담긴 'Status' 열로 오기도 한다.
+    { field: 'Status', header: 'Status', aliases: ['상태'], optional: true },
   ],
 };
 

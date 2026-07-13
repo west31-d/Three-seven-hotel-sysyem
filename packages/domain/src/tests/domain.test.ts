@@ -71,6 +71,7 @@ function hanjin(partial: Partial<RawHanjinRow>, i = 0): RawHanjinRow {
     Room: 'TWN',
     Name: '이영희',
     Remark: null,
+    Status: null,
     ...partial,
   };
 }
@@ -107,6 +108,22 @@ describe('normalizeHis', () => {
     );
     expect(r?.체크인).toBe('2026-06-30');
     expect(r?.체크아웃).toBe('2026-07-02');
+  });
+
+  it('Bed Type2/열3 에 방타입처럼 보이는 값이 있으면 객실타입에 이어붙인다', () => {
+    const [r] = normalizeHisRows(
+      [his({ 'Bed Type': '1TWN', 'Bed Type2': '1DBL' })],
+      REF,
+    );
+    expect(r?.객실타입).toBe('1TWN + 1DBL');
+  });
+
+  it('Bed Type2/열3 가 일자별 재실 내역(날짜/일련번호/금액)이면 무시한다', () => {
+    const [r] = normalizeHisRows(
+      [his({ 'Bed Type': '1TWN', 'Bed Type2': 46203, 열3: 55000 })],
+      REF,
+    );
+    expect(r?.객실타입).toBe('1TWN');
   });
 });
 

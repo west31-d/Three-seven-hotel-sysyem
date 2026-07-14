@@ -77,4 +77,13 @@ describe('IndexedDbReservationRepository', () => {
     await repo.setSelectedDate('2026-07-10');
     expect(await repo.getSelectedDate()).toBe('2026-07-10');
   });
+
+  it('setChecked 로 확인 여부를 저장/해제하고 getCheckedIds 로 조회', async () => {
+    expect(await repo.getCheckedIds()).toEqual(new Set());
+    await repo.setChecked('HIS:a', true);
+    await repo.setChecked('HIS:b', true);
+    expect(await repo.getCheckedIds()).toEqual(new Set(['HIS:a', 'HIS:b']));
+    await repo.setChecked('HIS:a', false);
+    expect(await repo.getCheckedIds()).toEqual(new Set(['HIS:b']));
+  });
 });

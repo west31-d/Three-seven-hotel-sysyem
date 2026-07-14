@@ -54,6 +54,8 @@ interface AppState {
   his: RawHisRow[];
   bs: RawBsRow[];
   hanjin: RawHanjinRow[];
+  /** 통합 DB 화면에서 수동으로 확인 체크한 예약 id(NormalizedReservation.id) 집합 */
+  checkedIds: Set<string>;
   selectedDate: string;
   toasts: ToastMessage[];
 }
@@ -76,6 +78,7 @@ interface AppActions {
     rows: RawRowMap[S][],
   ): Promise<void>;
   clearSource(source: SourceType): Promise<void>;
+  setChecked(id: string, checked: boolean): Promise<void>;
   pushToast(t: Omit<ToastMessage, 'id'>): void;
   dismissToast(id: number): void;
 }
@@ -121,6 +124,7 @@ export function AppProvider({
     his: [],
     bs: [],
     hanjin: [],
+    checkedIds: new Set(),
     selectedDate: todayDateOnly(),
     toasts: [],
   });
@@ -147,6 +151,7 @@ export function AppProvider({
       his: out.his,
       bs: out.bs,
       hanjin: out.hanjin,
+      checkedIds: out.checkedIds,
       error: null,
     }));
   }, []);
@@ -255,6 +260,31 @@ export function AppProvider({
     [mutateThenRecompute],
   );
 
+  /** 확인 여부는 통합 예약 재계산에 영향을 주지 않으므로 낙관적으로 갱신하고, 실패 시에만 되돌린다. */
+  const setChecked = useCallback(
+    async (id: string, checked: boolean) => {
+      setState((s) => {
+        const next = new Set(s.checkedIds);
+        if (checked) next.add(id);
+        else next.delete(id);
+        return { ...s, checkedIds: next };
+      });
+      try {
+        await repoRef.current.setChecked(id, checked);
+      } catch (e) {
+        setState((s) => {
+          const next = new Set(s.checkedIds);
+          if (checked) next.delete(id);
+          else next.add(id);
+          return { ...s, checkedIds: next };
+        });
+        const detail = e instanceof Error ? e.message : String(e);
+        pushToast({ type: 'error', message: '확인 여부 저장에 실패했습니다.', detail });
+      }
+    },
+    [pushToast],
+  );
+
   // 최초 로드(및 로그인/로그아웃 시): 조회일 복원 + 원본 로드 + 파생 계산
   useEffect(() => {
     let cancelled = false;
@@ -286,6 +316,7 @@ export function AppProvider({
           his: out.his,
           bs: out.bs,
           hanjin: out.hanjin,
+          checkedIds: out.checkedIds,
         }));
       } catch (e) {
         if (cancelled) return;
@@ -311,6 +342,7 @@ export function AppProvider({
       replaceSource,
       appendSource,
       clearSource,
+      setChecked,
       pushToast,
       dismissToast,
     }),
@@ -326,6 +358,7 @@ export function AppProvider({
       replaceSource,
       appendSource,
       clearSource,
+      setChecked,
       pushToast,
       dismissToast,
     ],

@@ -1,14 +1,14 @@
 /**
  * 통합 DB 화면.
- * 열: DB/예약코드/체크인/체크아웃/고객명/인원/객실타입/예약상태/예약건수/중복여부
+ * 열: 확인/DB/예약코드/체크인/체크아웃/고객명/인원/객실타입/예약상태/예약건수/중복여부
  * - 정렬(헤더 클릭), DB/상태 필터, 날짜 범위 필터, 검색, 중복만 보기
  * - CSV 내보내기
- * - 행 클릭 시 해당 원본 화면으로 이동(행 강조)
+ * - 확인 체크박스는 수동으로 확인 여부를 표시하는 용도로, 원본/통합 재계산과 무관하게
+ *   별도로 저장/복원된다(새로고침해도 유지).
  * 필터/정렬은 표시에만 영향을 주며 원본 데이터/집계값은 바꾸지 않는다.
  */
 
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useApp } from '../app/store';
 import {
   filterIntegrated,
@@ -18,7 +18,6 @@ import {
   type SortDirection,
 } from '@travel/domain';
 import { integratedToCsv, downloadCsv } from '@travel/domain';
-import type { SourceType } from '@travel/domain';
 import { dash, fmtDate } from '@travel/domain';
 import { DbBadge, StatusBadge, DuplicateBadge } from '../components/common/Badge';
 import { EmptyState } from '../components/common/states';
@@ -36,12 +35,6 @@ const COLUMNS: { key: IntegratedSortKey; label: string }[] = [
   { key: '중복여부', label: '중복여부' },
 ];
 
-const SOURCE_ROUTE: Record<SourceType, string> = {
-  HIS: '/source/his',
-  BS: '/source/bs',
-  HANJIN: '/source/hanjin',
-};
-
 function reservationStatusRowClass(status: string): string {
   if (status === '정상') {
     return 'bg-emerald-50/70 hover:bg-emerald-100/70';
@@ -53,8 +46,7 @@ function reservationStatusRowClass(status: string): string {
 }
 
 export function IntegratedDbPage(): JSX.Element {
-  const { state } = useApp();
-  const navigate = useNavigate();
+  const { state, actions } = useApp();
 
   const [sortKey, setSortKey] = useState<IntegratedSortKey>('체크인');
   const [sortDir, setSortDir] = useState<SortDirection>('asc');
@@ -99,9 +91,7 @@ export function IntegratedDbPage(): JSX.Element {
     <section className="space-y-4">
       <header className="space-y-1">
         <h2 className="text-lg font-semibold text-slate-800">통합 DB</h2>
-        <p className="text-sm text-slate-500">
-          세 원본을 통합·정규화한 결과입니다. 행을 클릭하면 원본 화면으로 이동합니다.
-        </p>
+        <p className="text-sm text-slate-500">세 원본을 통합·정규화한 결과입니다.</p>
       </header>
 
       {/* 필터 바 */}
@@ -261,6 +251,9 @@ export function IntegratedDbPage(): JSX.Element {
           <table className="min-w-full text-sm">
             <thead className="sticky top-0 bg-slate-50">
               <tr>
+                <th className="whitespace-nowrap border-b border-slate-200 px-3 py-2 text-left text-xs font-semibold text-slate-500">
+                  확인
+                </th>
                 {COLUMNS.map((c) => {
                   const active = sortKey === c.key;
                   return (
@@ -287,16 +280,18 @@ export function IntegratedDbPage(): JSX.Element {
               {visible.map((r) => (
                 <tr
                   key={r.id}
-                  onClick={() =>
-                    navigate(
-                      `${SOURCE_ROUTE[r.sourceType]}?rowId=${encodeURIComponent(r.sourceRowId)}`,
-                    )
-                  }
-                  className={`cursor-pointer border-b border-slate-100 ${reservationStatusRowClass(
+                  className={`border-b border-slate-100 ${reservationStatusRowClass(
                     r.예약상태,
                   )}`}
-                  title="클릭하여 원본 보기"
                 >
+                  <td className="whitespace-nowrap px-3 py-1.5">
+                    <input
+                      type="checkbox"
+                      aria-label="확인 여부"
+                      checked={state.checkedIds.has(r.id)}
+                      onChange={(e) => void actions.setChecked(r.id, e.target.checked)}
+                    />
+                  </td>
                   <td className="whitespace-nowrap px-3 py-1.5">
                     <DbBadge db={r.DB} />
                   </td>

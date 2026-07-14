@@ -112,4 +112,17 @@ export class IndexedDbReservationRepository implements ReservationRepository {
   async setSelectedDate(date: string): Promise<void> {
     await this.db.settings.put({ key: SELECTED_DATE_KEY, value: date });
   }
+
+  async getCheckedIds(): Promise<Set<string>> {
+    const rows = await this.db.checks.toArray();
+    return new Set(rows.map((r) => r.id));
+  }
+
+  async setChecked(id: string, checked: boolean): Promise<void> {
+    if (checked) {
+      await this.db.checks.put({ id });
+    } else {
+      await this.db.checks.delete(id);
+    }
+  }
 }

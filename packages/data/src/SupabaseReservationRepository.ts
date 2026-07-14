@@ -30,6 +30,18 @@ interface RawRowRecord {
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+/**
+ * 'checked_reservations' 테이블이 아직 DB에 없을 때(schema.sql 미실행) PostgREST 가
+ * 돌려주는 오류인지 확인한다. 이 기능은 부가 기능이므로, 테이블이 없어도 새로고침
+ * 전체가 실패하지 않고 '확인 안 됨'으로 동작하도록 한다.
+ */
+function isMissingTableError(error: { code?: string; message?: string }): boolean {
+  return (
+    error.code === 'PGRST205' ||
+    (error.message ?? '').includes('Could not find the table')
+  );
+}
+
 /** 앱의 원본 행 <-> DB 레코드 변환 */
 function toRecord(row: Record<string, CellValue> & { id: string; sourceOrder: number }): {
   id: string;
@@ -156,5 +168,54 @@ export class SupabaseReservationRepository implements ReservationRepository {
       { onConflict: 'hotel_id,key' },
     );
     if (error) throw new Error(`설정을 저장하지 못했습니다: ${error.message}`);
+  }
+
+  async getCheckedIds(): Promise<Set<string>> {
+    const { data, error } = await this.sb
+      .from('checked_reservations')
+      .select('id')
+      .eq('hotel_id', this.hotelId);
+    if (error) {
+      if (isMissingTableError(error)) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          "'checked_reservations' 테이블이 아직 없습니다. supabase/schema.sql 을 실행하면 확인 여부 기능이 활성화됩니다.",
+        );
+        return new Set();
+      }
+      throw new Error(`확인 여부를 읽지 못했습니다: ${error.message}`);
+    }
+    return new Set((data ?? []).map((r: { id: string }) => r.id));
+  }
+
+  async setChecked(id: string, checked: boolean): Promise<void> {
+    const missingTableMessage =
+      "확인 여부 기능이 아직 설정되지 않았습니다. 관리자가 Supabase 에 'checked_reservations' 테이블을 추가해야 합니다.";
+    if (checked) {
+      const { error } = await this.sb.from('checked_reservations').upsert(
+        { hotel_id: this.hotelId, id },
+        { onConflict: 'hotel_id,id' },
+      );
+      if (error) {
+        throw new Error(
+          isMissingTableError(error)
+            ? missingTableMessage
+            : `확인 여부를 저장하지 못했습니다: ${error.message}`,
+        );
+      }
+    } else {
+      const { error } = await this.sb
+        .from('checked_reservations')
+        .delete()
+        .eq('hotel_id', this.hotelId)
+        .eq('id', id);
+      if (error) {
+        throw new Error(
+          isMissingTableError(error)
+            ? missingTableMessage
+            : `확인 여부를 저장하지 못했습니다: ${error.message}`,
+        );
+      }
+    }
   }
 }

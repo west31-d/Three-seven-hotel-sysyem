@@ -17,11 +17,17 @@ export interface SettingRow {
   value: string;
 }
 
+/** 통합 DB 화면에서 수동으로 확인 체크한 예약(NormalizedReservation.id). 존재하면 확인됨. */
+export interface CheckRow {
+  id: string;
+}
+
 export class AppDatabase extends Dexie {
   his!: Table<RawHisRow, string>;
   bs!: Table<RawBsRow, string>;
   hanjin!: Table<RawHanjinRow, string>;
   settings!: Table<SettingRow, string>;
+  checks!: Table<CheckRow, string>;
 
   constructor(name = 'travel-reservation-db') {
     super(name);
@@ -31,6 +37,13 @@ export class AppDatabase extends Dexie {
       bs: 'id, sourceOrder',
       hanjin: 'id, sourceOrder',
       settings: 'key',
+    });
+    this.version(2).stores({
+      his: 'id, sourceOrder',
+      bs: 'id, sourceOrder',
+      hanjin: 'id, sourceOrder',
+      settings: 'key',
+      checks: 'id',
     });
   }
 }

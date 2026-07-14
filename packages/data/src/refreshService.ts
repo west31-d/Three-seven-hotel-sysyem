@@ -18,6 +18,8 @@ export interface RefreshOutput {
   his: RawHisRow[];
   bs: RawBsRow[];
   hanjin: RawHanjinRow[];
+  /** 통합 DB 화면에서 수동으로 확인 체크한 예약 id(NormalizedReservation.id) 집합 */
+  checkedIds: Set<string>;
 }
 
 /**
@@ -30,10 +32,11 @@ export async function refreshReservations(
   referenceYear: number = new Date().getFullYear(),
   hotel: string | null = null,
 ): Promise<RefreshOutput> {
-  const [his, bs, hanjin] = await Promise.all([
+  const [his, bs, hanjin, checkedIds] = await Promise.all([
     repo.listRows('HIS'),
     repo.listRows('BS'),
     repo.listRows('HANJIN'),
+    repo.getCheckedIds(),
   ]);
 
   const reservations = buildIntegratedReservations(
@@ -44,5 +47,5 @@ export async function refreshReservations(
     hotel,
   );
 
-  return { reservations, his, bs, hanjin };
+  return { reservations, his, bs, hanjin, checkedIds };
 }

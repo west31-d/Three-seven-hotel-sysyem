@@ -54,4 +54,10 @@ export interface ReservationRepository {
 
   /** 조회일 저장 */
   setSelectedDate(date: string): Promise<void>;
+
+  /** 통합 DB 화면에서 수동으로 확인 체크한 예약 id(NormalizedReservation.id) 목록 */
+  getCheckedIds(): Promise<Set<string>>;
+
+  /** 예약 확인 여부 저장/해제 */
+  setChecked(id: string, checked: boolean): Promise<void>;
 }

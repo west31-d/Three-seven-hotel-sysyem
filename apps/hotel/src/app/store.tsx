@@ -31,8 +31,15 @@ import type {
   ReservationRepository,
   Session,
   StorageMode,
+  SupportRepository,
+  SupportTicket,
+  TicketStatus,
 } from '@travel/data';
-import { createRepository, refreshReservations } from '@travel/data';
+import {
+  createRepository,
+  createSupportRepository,
+  refreshReservations,
+} from '@travel/data';
 import { todayDateOnly, addDaysDateOnly } from '@travel/domain';
 
 export interface ToastMessage {
@@ -56,6 +63,8 @@ interface AppState {
   hanjin: RawHanjinRow[];
   /** 통합 DB 화면에서 수동으로 확인 체크한 예약 id(NormalizedReservation.id) 집합 */
   checkedIds: Set<string>;
+  /** 고객센터(오류/문의) 기록, 최신순 */
+  tickets: SupportTicket[];
   selectedDate: string;
   toasts: ToastMessage[];
 }
@@ -79,6 +88,10 @@ interface AppActions {
   ): Promise<void>;
   clearSource(source: SourceType): Promise<void>;
   setChecked(id: string, checked: boolean): Promise<void>;
+  refreshTickets(): Promise<void>;
+  createTicket(title: string, content: string, reporter: string | null): Promise<void>;
+  setTicketStatus(id: string, status: TicketStatus): Promise<void>;
+  deleteTicket(id: string): Promise<void>;
   pushToast(t: Omit<ToastMessage, 'id'>): void;
   dismissToast(id: number): void;
 }
@@ -107,12 +120,14 @@ export function AppProvider({
   const handle = useMemo(() => createRepository(session), [session]);
   const repoRef = useRef<ReservationRepository>(repository ?? handle.repo);
   const hotelRef = useRef<string | null>(handle.hotel);
+  const supportRepoRef = useRef<SupportRepository>(createSupportRepository(session));
 
   // 세션이 바뀌면(로그인/로그아웃) 저장소를 갈아끼운다
   useEffect(() => {
     repoRef.current = repository ?? handle.repo;
     hotelRef.current = handle.hotel;
-  }, [handle, repository]);
+    supportRepoRef.current = createSupportRepository(session);
+  }, [handle, repository, session]);
 
   const [state, setState] = useState<AppState>({
     ready: false,
@@ -125,6 +140,7 @@ export function AppProvider({
     bs: [],
     hanjin: [],
     checkedIds: new Set(),
+    tickets: [],
     selectedDate: todayDateOnly(),
     toasts: [],
   });
@@ -285,6 +301,57 @@ export function AppProvider({
     [pushToast],
   );
 
+  /** 고객센터 기록을 새로 불러온다. 실패해도 나머지 화면에는 영향을 주지 않는다. */
+  const refreshTickets = useCallback(async () => {
+    try {
+      const tickets = await supportRepoRef.current.listTickets();
+      setState((s) => ({ ...s, tickets }));
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
+      pushToast({ type: 'error', message: '고객센터 기록을 불러오지 못했습니다.', detail });
+    }
+  }, [pushToast]);
+
+  const createTicket = useCallback(
+    async (title: string, content: string, reporter: string | null) => {
+      try {
+        await supportRepoRef.current.createTicket({ title, content, reporter });
+        await refreshTickets();
+      } catch (e) {
+        const detail = e instanceof Error ? e.message : String(e);
+        pushToast({ type: 'error', message: '기록을 저장하지 못했습니다.', detail });
+        throw e;
+      }
+    },
+    [refreshTickets, pushToast],
+  );
+
+  const setTicketStatus = useCallback(
+    async (id: string, status: TicketStatus) => {
+      try {
+        await supportRepoRef.current.setTicketStatus(id, status);
+        await refreshTickets();
+      } catch (e) {
+        const detail = e instanceof Error ? e.message : String(e);
+        pushToast({ type: 'error', message: '상태를 변경하지 못했습니다.', detail });
+      }
+    },
+    [refreshTickets, pushToast],
+  );
+
+  const deleteTicket = useCallback(
+    async (id: string) => {
+      try {
+        await supportRepoRef.current.deleteTicket(id);
+        await refreshTickets();
+      } catch (e) {
+        const detail = e instanceof Error ? e.message : String(e);
+        pushToast({ type: 'error', message: '기록을 삭제하지 못했습니다.', detail });
+      }
+    },
+    [refreshTickets, pushToast],
+  );
+
   // 최초 로드(및 로그인/로그아웃 시): 조회일 복원 + 원본 로드 + 파생 계산
   useEffect(() => {
     let cancelled = false;
@@ -323,10 +390,13 @@ export function AppProvider({
         const detail = e instanceof Error ? e.message : String(e);
         setState((s) => ({ ...s, ready: true, loading: false, error: detail }));
       }
+      // 고객센터 기록은 별도 저장소이므로 예약 로드와 무관하게 독립적으로 불러온다.
+      void refreshTickets();
     })();
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handle, repository]);
 
   const actions = useMemo<AppActions>(
@@ -343,6 +413,10 @@ export function AppProvider({
       appendSource,
       clearSource,
       setChecked,
+      refreshTickets,
+      createTicket,
+      setTicketStatus,
+      deleteTicket,
       pushToast,
       dismissToast,
     }),
@@ -359,6 +433,10 @@ export function AppProvider({
       appendSource,
       clearSource,
       setChecked,
+      refreshTickets,
+      createTicket,
+      setTicketStatus,
+      deleteTicket,
       pushToast,
       dismissToast,
     ],

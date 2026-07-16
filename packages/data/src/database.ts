@@ -22,12 +22,24 @@ export interface CheckRow {
   id: string;
 }
 
+/** 고객센터(오류/문의) 기록 */
+export interface TicketRow {
+  id: string;
+  title: string;
+  content: string;
+  status: string;
+  reporter: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export class AppDatabase extends Dexie {
   his!: Table<RawHisRow, string>;
   bs!: Table<RawBsRow, string>;
   hanjin!: Table<RawHanjinRow, string>;
   settings!: Table<SettingRow, string>;
   checks!: Table<CheckRow, string>;
+  tickets!: Table<TicketRow, string>;
 
   constructor(name = 'travel-reservation-db') {
     super(name);
@@ -44,6 +56,14 @@ export class AppDatabase extends Dexie {
       hanjin: 'id, sourceOrder',
       settings: 'key',
       checks: 'id',
+    });
+    this.version(3).stores({
+      his: 'id, sourceOrder',
+      bs: 'id, sourceOrder',
+      hanjin: 'id, sourceOrder',
+      settings: 'key',
+      checks: 'id',
+      tickets: 'id, createdAt',
     });
   }
 }

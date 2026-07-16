@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { AppDatabase } from '../database';
 import { IndexedDbReservationRepository } from '../IndexedDbReservationRepository';
+import { IndexedDbSupportRepository } from '../IndexedDbSupportRepository';
 import type { RawHisRow } from '@travel/domain';
 
 function hisRow(id: string, order: number, code: string): RawHisRow {
@@ -85,5 +86,37 @@ describe('IndexedDbReservationRepository', () => {
     expect(await repo.getCheckedIds()).toEqual(new Set(['HIS:a', 'HIS:b']));
     await repo.setChecked('HIS:a', false);
     expect(await repo.getCheckedIds()).toEqual(new Set(['HIS:b']));
+  });
+});
+
+let supportRepo: IndexedDbSupportRepository;
+
+beforeEach(async () => {
+  const db = new AppDatabase(`test-db-${Math.random().toString(36).slice(2)}`);
+  supportRepo = new IndexedDbSupportRepository(db);
+});
+
+describe('IndexedDbSupportRepository', () => {
+  it('createTicket 은 상태 "미해결"로 시작하고 listTickets 는 최신순', async () => {
+    await supportRepo.createTicket({ title: '첫 번째', content: '내용1', reporter: '김철수' });
+    await supportRepo.createTicket({ title: '두 번째', content: '내용2', reporter: null });
+    const tickets = await supportRepo.listTickets();
+    expect(tickets.map((t) => t.title)).toEqual(['두 번째', '첫 번째']);
+    expect(tickets.every((t) => t.status === '미해결')).toBe(true);
+  });
+
+  it('setTicketStatus 로 처리 상태를 변경', async () => {
+    await supportRepo.createTicket({ title: '오류', content: '설명', reporter: null });
+    const [ticket] = await supportRepo.listTickets();
+    await supportRepo.setTicketStatus(ticket!.id, '해결됨');
+    const [updated] = await supportRepo.listTickets();
+    expect(updated!.status).toBe('해결됨');
+  });
+
+  it('deleteTicket 은 기록을 삭제', async () => {
+    await supportRepo.createTicket({ title: '삭제될 기록', content: '내용', reporter: null });
+    const [ticket] = await supportRepo.listTickets();
+    await supportRepo.deleteTicket(ticket!.id);
+    expect(await supportRepo.listTickets()).toHaveLength(0);
   });
 });

@@ -13,6 +13,7 @@ import {
   type CentralSnapshot,
   type Session,
 } from '@travel/data';
+import { SupportView } from './SupportView';
 import {
   countCheckIn,
   countCheckOut,
@@ -56,6 +57,7 @@ interface CentralAppProps {
 }
 
 export function CentralApp({ session, onSignOut }: CentralAppProps): JSX.Element {
+  const [view, setView] = useState<'db' | 'support'>('db');
   const [snapshot, setSnapshot] = useState<CentralSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -135,14 +137,16 @@ export function CentralApp({ session, onSignOut }: CentralAppProps): JSX.Element
             조회 전용
           </span>
           <div className="ml-auto flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => void load()}
-              disabled={loading}
-              className="rounded bg-slate-800 px-3 py-1.5 text-sm font-medium text-white enabled:hover:bg-slate-700 disabled:opacity-50"
-            >
-              {loading ? '불러오는 중…' : '새로고침'}
-            </button>
+            {view === 'db' && (
+              <button
+                type="button"
+                onClick={() => void load()}
+                disabled={loading}
+                className="rounded bg-slate-800 px-3 py-1.5 text-sm font-medium text-white enabled:hover:bg-slate-700 disabled:opacity-50"
+              >
+                {loading ? '불러오는 중…' : '새로고침'}
+              </button>
+            )}
             {session && (
               <>
                 <span className="hidden text-xs text-slate-500 sm:inline">
@@ -159,6 +163,29 @@ export function CentralApp({ session, onSignOut }: CentralAppProps): JSX.Element
             )}
           </div>
         </div>
+        <nav className="mx-auto max-w-7xl px-4">
+          <div className="flex gap-1">
+            {(
+              [
+                ['db', '통합 DB'],
+                ['support', '고객센터'],
+              ] as [typeof view, string][]
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setView(value)}
+                className={`border-b-2 px-3 py-2 text-sm ${
+                  view === value
+                    ? 'border-slate-800 font-semibold text-slate-900'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </nav>
       </header>
 
       <main className="mx-auto max-w-7xl space-y-5 px-4 py-6">
@@ -168,6 +195,10 @@ export function CentralApp({ session, onSignOut }: CentralAppProps): JSX.Element
           </div>
         )}
 
+        {view === 'support' ? (
+          <SupportView hotels={snapshot?.hotels ?? []} />
+        ) : (
+          <>
         {/* 조회일 + KPI */}
         <div className="flex flex-wrap items-center gap-2">
           <label className="text-xs font-medium text-slate-600" htmlFor="cdate">
@@ -372,6 +403,8 @@ export function CentralApp({ session, onSignOut }: CentralAppProps): JSX.Element
               </tbody>
             </table>
           </div>
+        )}
+          </>
         )}
       </main>
     </div>

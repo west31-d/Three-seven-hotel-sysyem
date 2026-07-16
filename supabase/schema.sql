@@ -55,6 +55,21 @@ create table if not exists checked_reservations (
   primary key (hotel_id, id)
 );
 
+-- 고객센터(오류/문의) 기록. 호텔은 자기 것만 쓰고, 본사는 전체를 읽기 전용으로 본다.
+create table if not exists support_tickets (
+  id         uuid primary key,
+  hotel_id   uuid not null references hotels(id) on delete cascade,
+  title      text not null,
+  content    text not null,
+  status     text not null default '미해결' check (status in ('미해결', '해결됨')),
+  reporter   text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists support_tickets_hotel_created_idx
+  on support_tickets (hotel_id, created_at desc);
+
 -- ---------------------------------------------------------------- 헬퍼 함수
 -- 정책 안에서 profiles 를 조회하므로 security definer 로 두어 재귀/권한 문제를 피한다.
 
@@ -85,6 +100,7 @@ alter table profiles             enable row level security;
 alter table raw_rows             enable row level security;
 alter table app_settings         enable row level security;
 alter table checked_reservations enable row level security;
+alter table support_tickets      enable row level security;
 
 drop policy if exists hotels_select on hotels;
 create policy hotels_select on hotels
@@ -128,9 +144,20 @@ create policy checked_reservations_write on checked_reservations
   for all using (hotel_id = current_hotel_id())
           with check (hotel_id = current_hotel_id());
 
+-- 고객센터: 본사는 전체 읽기, 호텔은 자기 것만 읽기/쓰기/삭제/상태변경
+drop policy if exists support_tickets_select on support_tickets;
+create policy support_tickets_select on support_tickets
+  for select using (is_central() or hotel_id = current_hotel_id());
+
+drop policy if exists support_tickets_write on support_tickets;
+create policy support_tickets_write on support_tickets
+  for all using (hotel_id = current_hotel_id())
+          with check (hotel_id = current_hotel_id());
+
 -- 이 프로젝트는 public 스키마 신규 테이블에 대한 기본 권한(default privileges)이
 -- authenticated 롤까지 자동으로 내려오지 않는 것으로 보여 명시적으로 부여한다.
 grant select, insert, update, delete on table checked_reservations to authenticated;
+grant select, insert, update, delete on table support_tickets to authenticated;
 
 -- ---------------------------------------------------------------- 트랜잭션 함수
 -- 앱이 보내는 p_rows 형태: [{ "id": uuid, "sourceOrder": 0, "data": { ...원본 행... } }, ...]

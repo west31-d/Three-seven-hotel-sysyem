@@ -19,6 +19,7 @@ import {
   type RawRowMap,
   type ReservationRepository,
 } from './ReservationRepository';
+import { isMissingTableError } from './postgrestErrors';
 
 /** DB 에 저장되는 행 모양 */
 interface RawRowRecord {
@@ -29,18 +30,6 @@ interface RawRowRecord {
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-/**
- * 'checked_reservations' 테이블이 아직 DB에 없을 때(schema.sql 미실행) PostgREST 가
- * 돌려주는 오류인지 확인한다. 이 기능은 부가 기능이므로, 테이블이 없어도 새로고침
- * 전체가 실패하지 않고 '확인 안 됨'으로 동작하도록 한다.
- */
-function isMissingTableError(error: { code?: string; message?: string }): boolean {
-  return (
-    error.code === 'PGRST205' ||
-    (error.message ?? '').includes('Could not find the table')
-  );
-}
 
 /** 앱의 원본 행 <-> DB 레코드 변환 */
 function toRecord(row: Record<string, CellValue> & { id: string; sourceOrder: number }): {

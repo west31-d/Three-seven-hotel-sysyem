@@ -1,6 +1,7 @@
 /** 앱 레이아웃 + 네비게이션 + 라우팅 */
 
-import { NavLink, Route, Routes } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import { useApp } from './store';
 import { Toasts } from '../components/common/Toasts';
 import { LoadingState } from '../components/common/states';
@@ -9,14 +10,72 @@ import { HisSourcePage } from '../pages/HisSourcePage';
 import { BsSourcePage } from '../pages/BsSourcePage';
 import { HanjinSourcePage } from '../pages/HanjinSourcePage';
 import { IntegratedDbPage } from '../pages/IntegratedDbPage';
+import { SupportPage } from '../pages/SupportPage';
 
-const TABS = [
-  { to: '/', label: '대시보드', end: true },
-  { to: '/source/his', label: '히스 원본', end: false },
-  { to: '/source/bs', label: 'BS 원본', end: false },
-  { to: '/source/hanjin', label: '한진 원본', end: false },
-  { to: '/integrated', label: '통합 DB', end: false },
+const SOURCE_TABS = [
+  { to: '/source/his', label: '히스' },
+  { to: '/source/bs', label: 'BS' },
+  { to: '/source/hanjin', label: '한진' },
 ];
+
+/** 히스/BS/한진 원본을 한데 묶은 드롭다운 메뉴 */
+function DataMenu(): JSX.Element {
+  const location = useLocation();
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const active = location.pathname.startsWith('/source/');
+
+  useEffect(() => setOpen(false), [location.pathname]);
+
+  useEffect(() => {
+    function onOutsideClick(e: MouseEvent): void {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', onOutsideClick);
+    return () => document.removeEventListener('mousedown', onOutsideClick);
+  }, []);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="true"
+        aria-expanded={open}
+        className={`inline-flex items-center gap-1 border-b-2 px-3 py-2 text-sm ${
+          active
+            ? 'border-slate-800 font-semibold text-slate-900'
+            : 'border-transparent text-slate-500 hover:text-slate-800'
+        }`}
+      >
+        데이터
+        <span className="text-[10px] text-slate-400">{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <ul className="absolute left-0 top-full z-10 mt-1 min-w-[7rem] rounded border border-slate-200 bg-white py-1 shadow-lg">
+          {SOURCE_TABS.map((t) => (
+            <li key={t.to}>
+              <NavLink
+                to={t.to}
+                className={({ isActive }) =>
+                  `block px-3 py-1.5 text-sm ${
+                    isActive
+                      ? 'bg-slate-50 font-semibold text-slate-900'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`
+                }
+              >
+                {t.label}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 interface AppProps {
   /** 로그아웃 (로컬 모드면 사용하지 않음) */
@@ -59,6 +118,18 @@ export function App({ onSignOut, email }: AppProps): JSX.Element {
             )}
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <NavLink
+              to="/support"
+              className={({ isActive }) =>
+                `rounded border px-3 py-1.5 text-sm ${
+                  isActive
+                    ? 'border-slate-800 font-semibold text-slate-900'
+                    : 'border-slate-300 text-slate-600 hover:bg-slate-50'
+                }`
+              }
+            >
+              고객센터
+            </NavLink>
             {email && onSignOut && (
               <>
                 <span className="hidden text-xs text-slate-500 sm:inline">
@@ -76,24 +147,39 @@ export function App({ onSignOut, email }: AppProps): JSX.Element {
           </div>
         </div>
         <nav className="mx-auto max-w-7xl px-4">
-          <ul className="flex flex-wrap gap-1">
-            {TABS.map((t) => (
-              <li key={t.to}>
-                <NavLink
-                  to={t.to}
-                  end={t.end}
-                  className={({ isActive }) =>
-                    `inline-block border-b-2 px-3 py-2 text-sm ${
-                      isActive
-                        ? 'border-slate-800 font-semibold text-slate-900'
-                        : 'border-transparent text-slate-500 hover:text-slate-800'
-                    }`
-                  }
-                >
-                  {t.label}
-                </NavLink>
-              </li>
-            ))}
+          <ul className="flex flex-wrap items-stretch gap-1">
+            <li>
+              <NavLink
+                to="/"
+                end
+                className={({ isActive }) =>
+                  `inline-block border-b-2 px-3 py-2 text-sm ${
+                    isActive
+                      ? 'border-slate-800 font-semibold text-slate-900'
+                      : 'border-transparent text-slate-500 hover:text-slate-800'
+                  }`
+                }
+              >
+                대시보드
+              </NavLink>
+            </li>
+            <li>
+              <DataMenu />
+            </li>
+            <li>
+              <NavLink
+                to="/integrated"
+                className={({ isActive }) =>
+                  `inline-block border-b-2 px-3 py-2 text-sm ${
+                    isActive
+                      ? 'border-slate-800 font-semibold text-slate-900'
+                      : 'border-transparent text-slate-500 hover:text-slate-800'
+                  }`
+                }
+              >
+                DB
+              </NavLink>
+            </li>
           </ul>
         </nav>
       </header>
@@ -103,6 +189,7 @@ export function App({ onSignOut, email }: AppProps): JSX.Element {
           <LoadingState message="초기화 중…" />
         ) : (
           <Routes>
+            <Route path="/support" element={<SupportPage />} />
             <Route path="/" element={<DashboardPage />} />
             <Route path="/source/his" element={<HisSourcePage />} />
             <Route path="/source/bs" element={<BsSourcePage />} />

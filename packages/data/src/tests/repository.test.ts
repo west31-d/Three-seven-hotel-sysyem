@@ -98,15 +98,30 @@ beforeEach(async () => {
 
 describe('IndexedDbSupportRepository', () => {
   it('createTicket 은 상태 "미해결"로 시작하고 listTickets 는 최신순', async () => {
-    await supportRepo.createTicket({ title: '첫 번째', content: '내용1', reporter: '김철수' });
-    await supportRepo.createTicket({ title: '두 번째', content: '내용2', reporter: null });
+    await supportRepo.createTicket({
+      title: '첫 번째',
+      content: '내용1',
+      reporter: '김철수',
+      image: null,
+    });
+    await supportRepo.createTicket({
+      title: '두 번째',
+      content: '내용2',
+      reporter: null,
+      image: null,
+    });
     const tickets = await supportRepo.listTickets();
     expect(tickets.map((t) => t.title)).toEqual(['두 번째', '첫 번째']);
     expect(tickets.every((t) => t.status === '미해결')).toBe(true);
   });
 
   it('setTicketStatus 로 처리 상태를 변경', async () => {
-    await supportRepo.createTicket({ title: '오류', content: '설명', reporter: null });
+    await supportRepo.createTicket({
+      title: '오류',
+      content: '설명',
+      reporter: null,
+      image: null,
+    });
     const [ticket] = await supportRepo.listTickets();
     await supportRepo.setTicketStatus(ticket!.id, '해결됨');
     const [updated] = await supportRepo.listTickets();
@@ -114,9 +129,26 @@ describe('IndexedDbSupportRepository', () => {
   });
 
   it('deleteTicket 은 기록을 삭제', async () => {
-    await supportRepo.createTicket({ title: '삭제될 기록', content: '내용', reporter: null });
+    await supportRepo.createTicket({
+      title: '삭제될 기록',
+      content: '내용',
+      reporter: null,
+      image: null,
+    });
     const [ticket] = await supportRepo.listTickets();
     await supportRepo.deleteTicket(ticket!.id);
     expect(await supportRepo.listTickets()).toHaveLength(0);
+  });
+
+  it('createTicket 은 이미지(data URL)를 저장/조회할 수 있다', async () => {
+    const dataUrl = 'data:image/jpeg;base64,AAAA';
+    await supportRepo.createTicket({
+      title: '스크린샷 첨부',
+      content: '내용',
+      reporter: null,
+      image: dataUrl,
+    });
+    const [ticket] = await supportRepo.listTickets();
+    expect(ticket!.image).toBe(dataUrl);
   });
 });

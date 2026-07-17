@@ -48,6 +48,7 @@ const COLUMNS: { key: IntegratedSortKey; label: string }[] = [
 function reservationStatusRowClass(status: string): string {
   if (status === '정상') return 'bg-emerald-50/70';
   if (status === '취소') return 'bg-red-50/70';
+  if (status === '변경') return 'bg-amber-50/70';
   return 'odd:bg-white even:bg-slate-50/40';
 }
 

@@ -16,8 +16,11 @@
  *       (예: 마스터 행 'Bed Type'='1TWN', 다음 행 'Bed Type'='1DBL')는 그 값이 방타입
  *       형태(숫자+영문)이므로 객실타입에 이어붙인다.
  *  4. DB = '히스'
- *  5. 예약상태: 마스터 행 Status 가 정확히 '캔슬' 이면 '취소', 그 외 모든 값(빈 값 포함)은 '정상'.
- *     - '캔슬 '(공백 포함), '취소' 등 정확히 '캔슬'이 아닌 값은 '정상'. 유사어를 취소로 처리하지 않는다.
+ *  5. 예약상태: 마스터 행 Status 가
+ *       - 정확히 '캔슬' 이면 '취소'
+ *       - (캔슬이 아니면서) '변경' 글자를 포함하면 '변경'
+ *       - 그 외 모든 값(빈 값 포함)은 '정상'
+ *     - '캔슬 '(공백 포함), '취소' 등 정확히 '캔슬'이 아닌 값은 취소로 처리하지 않는다.
  *  6. 인원은 원본 문자열 그대로 유지.
  *  7. 체크인/체크아웃은 날짜 전용 문자열로 변환.
  */
@@ -36,12 +39,18 @@ function extractBedTypes(row: RawHisRow): string[] {
   return [row['Bed Type'], row['Bed Type2'], row['열3']].filter(looksLikeBedType);
 }
 
+/** 규칙 5: Status -> 예약상태 (캔슬 > 변경 > 정상 순으로 판정) */
+function resolveStatus(status: CellValue): string {
+  if (status === null || status === undefined) return '정상';
+  const str = String(status);
+  if (str === '캔슬') return '취소';
+  if (str.includes('변경')) return '변경';
+  return '정상';
+}
+
 type BaseWithoutBedType = Omit<BaseReservation, '객실타입'>;
 
 function buildBase(row: RawHisRow, referenceYear: number): BaseWithoutBedType {
-  const status = row.Status;
-  const isCancel = status !== null && status !== undefined && String(status) === '캔슬';
-
   return {
     sourceType: 'HIS',
     sourceRowId: row.id,
@@ -52,7 +61,7 @@ function buildBase(row: RawHisRow, referenceYear: number): BaseWithoutBedType {
     체크아웃: parseDateOnly(row['CHK-OUT'], referenceYear),
     고객명: toNullableString(row['단체명']),
     인원: toNullableString(row['인원']),
-    예약상태: isCancel ? '취소' : '정상',
+    예약상태: resolveStatus(row.Status),
   };
 }
 

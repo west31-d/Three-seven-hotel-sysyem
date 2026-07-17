@@ -15,6 +15,7 @@ export interface CentralSupportTicket {
   content: string;
   status: TicketStatus;
   reporter: string | null;
+  image: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -26,6 +27,7 @@ interface TicketRecord {
   content: string;
   status: string;
   reporter: string | null;
+  image: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -37,7 +39,7 @@ export async function loadCentralSupportTickets(
 ): Promise<CentralSupportTicket[]> {
   const { data, error } = await sb
     .from('support_tickets')
-    .select('id, hotel_id, title, content, status, reporter, created_at, updated_at')
+    .select('id, hotel_id, title, content, status, reporter, image, created_at, updated_at')
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -55,6 +57,7 @@ export async function loadCentralSupportTickets(
       content: rec.content,
       status: rec.status as TicketStatus,
       reporter: rec.reporter,
+      image: rec.image,
       createdAt: rec.created_at,
       updatedAt: rec.updated_at,
     };

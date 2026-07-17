@@ -4,7 +4,8 @@
  *
  * 예약 1건은 다음 순서의 줄로 시작한다:
  *   NO / Group Code / (예약번호, 선택) / CHK-IN / CHK-OUT / 단체명 / 인원 / Bed Type
- * 그 뒤로 이어지는 일자별 재실 내역(날짜/TWN/SGL/비고/금액 등)은 정규화에 쓰이지 않으므로
+ * 그 뒤로 이어지는 일자별 재실 내역(날짜/TWN/SGL/Status/예약번호/금액 등) 중 첫 밤의
+ * Status(비고, '캔슬'/'변경 ...' 등)만 뽑아내고, 나머지는 정규화에 쓰이지 않으므로
  * 다음 예약(NO + Group Code 패턴)이 나올 때까지 건너뛴다.
  *
  * 이 형태로 보이지 않으면 null 을 반환하여 호출부가 기존 방식(탭 구분 등)으로 처리하게 한다.
@@ -16,6 +17,10 @@ import type { CellMatrix } from './sheetMapping';
 const NO_LINE_RE = /^\d+$/;
 const GROUP_CODE_RE = /^[A-Za-z]\d{6,10}-\d{2,5}$/;
 const DATE_LINE_RE = /^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}$/;
+const COUNT_LINE_RE = /^\d+$/;
+const AMOUNT_LINE_RE = /^[\d,]+$/;
+// 예약번호 자리에 오는 '3/20 OK' 같은 승인일 메모(정규화에는 쓰이지 않음)
+const APPROVAL_NOTE_RE = /^\d{1,2}\/\d{1,2}\s*OK$/i;
 
 function isRecordStart(lines: string[], idx: number): boolean {
   return NO_LINE_RE.test(lines[idx] ?? '') && GROUP_CODE_RE.test(lines[idx + 1] ?? '');
@@ -87,6 +92,27 @@ export function reconstructHisCellLines(text: string): CellMatrix | null {
     if (bedTypeParts.length === 0) return null;
     const [bedType, bedType2 = null, bedType3 = null] = bedTypeParts;
 
+    // 첫 밤(날짜/TWN/SGL) 뒤에 Status(비고, '캔슬'/'변경 ...' 등 여러 줄일 수 있음)가 이어진다.
+    // 예약번호(예: '3/20 OK')나 금액(예: '55,000')이 나오면 Status 는 끝난 것으로 본다.
+    let status: string | null = null;
+    if (cursor < lines.length && DATE_LINE_RE.test(lines[cursor])) {
+      let statusCursor = cursor + 1; // 날짜
+      if (COUNT_LINE_RE.test(lines[statusCursor] ?? '')) statusCursor += 1; // TWN
+      if (COUNT_LINE_RE.test(lines[statusCursor] ?? '')) statusCursor += 1; // SGL
+      const statusParts: string[] = [];
+      while (
+        statusCursor < lines.length &&
+        !AMOUNT_LINE_RE.test(lines[statusCursor]) &&
+        !APPROVAL_NOTE_RE.test(lines[statusCursor]) &&
+        !DATE_LINE_RE.test(lines[statusCursor]) &&
+        !isRecordStart(lines, statusCursor)
+      ) {
+        statusParts.push(lines[statusCursor]);
+        statusCursor += 1;
+      }
+      if (statusParts.length > 0) status = statusParts.join(' ');
+    }
+
     rows.push([
       no,
       groupCode,
@@ -98,7 +124,7 @@ export function reconstructHisCellLines(text: string): CellMatrix | null {
       bedType,
       bedType2,
       bedType3,
-      null,
+      status,
     ]);
 
     // 다음 예약이 나올 때까지 일자별 재실 내역(날짜/TWN/SGL/비고/금액 등)을 건너뛴다.

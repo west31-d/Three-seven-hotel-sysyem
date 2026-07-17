@@ -20,6 +20,7 @@ export class IndexedDbSupportRepository implements SupportRepository {
     title: string;
     content: string;
     reporter: string | null;
+    image: string | null;
   }): Promise<void> {
     const now = new Date().toISOString();
     await this.db.tickets.put({
@@ -28,6 +29,7 @@ export class IndexedDbSupportRepository implements SupportRepository {
       content: input.content,
       status: '미해결',
       reporter: input.reporter,
+      image: input.image,
       createdAt: now,
       updatedAt: now,
     });

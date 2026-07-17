@@ -1,6 +1,6 @@
 /**
  * Supabase(Postgres) 기반 SupportRepository 구현.
- * 저장 형태: support_tickets(id, hotel_id, title, content, status, reporter, created_at, updated_at)
+ * 저장 형태: support_tickets(id, hotel_id, title, content, status, reporter, image, created_at, updated_at)
  * 권한: RLS 가 hotel_id 를 강제하므로 다른 호텔의 기록은 읽지도 쓰지도 못한다(본사는 읽기만 가능).
  */
 
@@ -15,6 +15,7 @@ interface TicketRecord {
   content: string;
   status: string;
   reporter: string | null;
+  image: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -29,6 +30,7 @@ function fromRecord(rec: TicketRecord): SupportTicket {
     content: rec.content,
     status: rec.status as TicketStatus,
     reporter: rec.reporter,
+    image: rec.image,
     createdAt: rec.created_at,
     updatedAt: rec.updated_at,
   };
@@ -43,7 +45,7 @@ export class SupabaseSupportRepository implements SupportRepository {
   async listTickets(): Promise<SupportTicket[]> {
     const { data, error } = await this.sb
       .from('support_tickets')
-      .select('id, title, content, status, reporter, created_at, updated_at')
+      .select('id, title, content, status, reporter, image, created_at, updated_at')
       .eq('hotel_id', this.hotelId)
       .order('created_at', { ascending: false });
     if (error) {
@@ -63,6 +65,7 @@ export class SupabaseSupportRepository implements SupportRepository {
     title: string;
     content: string;
     reporter: string | null;
+    image: string | null;
   }): Promise<void> {
     const { error } = await this.sb.from('support_tickets').insert({
       id: newId(),
@@ -71,6 +74,7 @@ export class SupabaseSupportRepository implements SupportRepository {
       content: input.content,
       status: '미해결',
       reporter: input.reporter,
+      image: input.image,
     });
     if (error) {
       throw new Error(

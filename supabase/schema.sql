@@ -63,9 +63,14 @@ create table if not exists support_tickets (
   content    text not null,
   status     text not null default '미해결' check (status in ('미해결', '해결됨')),
   reporter   text,
+  -- 첨부 이미지(스크린샷 붙여넣기 등). data URL 문자열을 그대로 저장한다.
+  image      text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- support_tickets 를 이미 만든 뒤 image 열을 새로 추가하는 경우를 위한 마이그레이션(중복 실행 안전)
+alter table support_tickets add column if not exists image text;
 
 create index if not exists support_tickets_hotel_created_idx
   on support_tickets (hotel_id, created_at desc);

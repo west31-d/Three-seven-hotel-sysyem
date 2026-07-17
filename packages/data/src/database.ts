@@ -29,6 +29,8 @@ export interface TicketRow {
   content: string;
   status: string;
   reporter: string | null;
+  /** 첨부 이미지(스크린샷 붙여넣기 등). data URL 문자열, 없으면 null */
+  image: string | null;
   createdAt: string;
   updatedAt: string;
 }

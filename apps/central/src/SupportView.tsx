@@ -63,6 +63,9 @@ export function SupportView({ hotels }: { hotels: Hotel[] }): JSX.Element {
     [tickets, hotelFilter, statusFilter],
   );
 
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selected = selectedId ? (tickets.find((t) => t.id === selectedId) ?? null) : null;
+
   return (
     <div className="space-y-4">
       {error && (
@@ -123,30 +126,89 @@ export function SupportView({ hotels }: { hotels: Hotel[] }): JSX.Element {
           기록이 없습니다.
         </div>
       ) : (
-        <ul className="space-y-2">
+        <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
           {visible.map((t) => (
-            <li key={t.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="flex flex-wrap items-center gap-2">
+            <li key={t.id}>
+              <button
+                type="button"
+                onClick={() => setSelectedId(t.id)}
+                className="flex w-full flex-wrap items-center gap-2 px-4 py-2.5 text-left hover:bg-slate-50"
+              >
                 <span
-                  className={`rounded px-2 py-0.5 text-xs font-medium ${statusBadgeClass(
+                  className={`shrink-0 rounded px-2 py-0.5 text-xs font-medium ${statusBadgeClass(
                     t.status,
                   )}`}
                 >
                   {t.status}
                 </span>
-                <span className="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                <span className="shrink-0 rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
                   {t.hotel}
                 </span>
-                <h3 className="text-sm font-semibold text-slate-800">{t.title}</h3>
-              </div>
-              <p className="mt-2 whitespace-pre-wrap text-sm text-slate-600">{t.content}</p>
-              <div className="mt-2 text-xs text-slate-400">
-                {t.reporter && <span>{t.reporter} · </span>}
-                {fmtDateTime(t.createdAt)}
-              </div>
+                <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800">
+                  {t.title}
+                </span>
+                <span className="shrink-0 text-xs text-slate-400">
+                  {t.reporter && <span>{t.reporter} · </span>}
+                  {fmtDateTime(t.createdAt)}
+                </span>
+              </button>
             </li>
           ))}
         </ul>
+      )}
+
+      {/* 상세 보기 (조회 전용) */}
+      {selected && (
+        <div
+          className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-slate-900/40 p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setSelectedId(null);
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="mt-10 w-full max-w-2xl rounded-lg bg-white p-5 shadow-xl"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span
+                  className={`rounded px-2 py-0.5 text-xs font-medium ${statusBadgeClass(
+                    selected.status,
+                  )}`}
+                >
+                  {selected.status}
+                </span>
+                <span className="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                  {selected.hotel}
+                </span>
+                <h3 className="text-sm font-semibold text-slate-800">{selected.title}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedId(null)}
+                aria-label="닫기"
+                className="rounded px-2 text-slate-500 hover:bg-slate-100"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="mt-3 whitespace-pre-wrap text-sm text-slate-600">{selected.content}</p>
+            {selected.image && (
+              <a href={selected.image} target="_blank" rel="noreferrer" className="mt-3 block">
+                <img
+                  src={selected.image}
+                  alt="첨부 이미지"
+                  className="max-h-96 w-full rounded border border-slate-200 object-contain"
+                />
+              </a>
+            )}
+            <div className="mt-3 text-xs text-slate-400">
+              {selected.reporter && <span>{selected.reporter} · </span>}
+              {fmtDateTime(selected.createdAt)}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

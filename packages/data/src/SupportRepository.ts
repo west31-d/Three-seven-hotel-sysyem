@@ -14,6 +14,8 @@ export interface SupportTicket {
   status: TicketStatus;
   /** 작성자가 직접 입력한 이름 등(선택, 로그인 계정과 무관) */
   reporter: string | null;
+  /** 첨부 이미지(스크린샷 붙여넣기 등). data URL 문자열, 없으면 null */
+  image: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -23,7 +25,12 @@ export interface SupportRepository {
   listTickets(): Promise<SupportTicket[]>;
 
   /** 새 기록 추가 (상태는 항상 '미해결'로 시작) */
-  createTicket(input: { title: string; content: string; reporter: string | null }): Promise<void>;
+  createTicket(input: {
+    title: string;
+    content: string;
+    reporter: string | null;
+    image: string | null;
+  }): Promise<void>;
 
   /** 처리 상태 변경 */
   setTicketStatus(id: string, status: TicketStatus): Promise<void>;

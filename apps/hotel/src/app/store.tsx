@@ -89,7 +89,12 @@ interface AppActions {
   clearSource(source: SourceType): Promise<void>;
   setChecked(id: string, checked: boolean): Promise<void>;
   refreshTickets(): Promise<void>;
-  createTicket(title: string, content: string, reporter: string | null): Promise<void>;
+  createTicket(
+    title: string,
+    content: string,
+    reporter: string | null,
+    image: string | null,
+  ): Promise<void>;
   setTicketStatus(id: string, status: TicketStatus): Promise<void>;
   deleteTicket(id: string): Promise<void>;
   pushToast(t: Omit<ToastMessage, 'id'>): void;
@@ -313,9 +318,14 @@ export function AppProvider({
   }, [pushToast]);
 
   const createTicket = useCallback(
-    async (title: string, content: string, reporter: string | null) => {
+    async (
+      title: string,
+      content: string,
+      reporter: string | null,
+      image: string | null,
+    ) => {
       try {
-        await supportRepoRef.current.createTicket({ title, content, reporter });
+        await supportRepoRef.current.createTicket({ title, content, reporter, image });
         await refreshTickets();
       } catch (e) {
         const detail = e instanceof Error ? e.message : String(e);

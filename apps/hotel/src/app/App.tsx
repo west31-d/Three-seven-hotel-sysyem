@@ -130,6 +130,14 @@ export function App({ onSignOut, email }: AppProps): JSX.Element {
             >
               고객센터
             </NavLink>
+            <a
+              href="https://app.notion.com/p/3a0cc13e79b5806888a2e0bc3cce0885"
+              target="_blank"
+              rel="noreferrer"
+              className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-500 hover:bg-slate-50"
+            >
+              사용법
+            </a>
             {email && onSignOut && (
               <>
                 <span className="hidden text-xs text-slate-500 sm:inline">

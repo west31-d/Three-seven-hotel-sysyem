@@ -47,6 +47,7 @@ export function ImportDialog<S extends SourceType>({
   const [parsed, setParsed] = useState<Parsed | null>(null);
   const [fileName, setFileName] = useState<string>('');
   const [busy, setBusy] = useState(false);
+  const [confirmReplace, setConfirmReplace] = useState(false);
 
   const reset = (): void => {
     setParsed(null);
@@ -95,6 +96,7 @@ export function ImportDialog<S extends SourceType>({
 
   const commit = async (): Promise<void> => {
     if (!parsed || !canCommit) return;
+    setConfirmReplace(false);
     setBusy(true);
     try {
       const rows = parsed.rows as never[];
@@ -116,9 +118,19 @@ export function ImportDialog<S extends SourceType>({
     }
   };
 
+  /** 교체는 기존 데이터를 모두 지우는 되돌릴 수 없는 작업이라 한 번 더 확인한다. */
+  const handleCommitClick = (): void => {
+    if (mode === 'replace') {
+      setConfirmReplace(true);
+      return;
+    }
+    void commit();
+  };
+
   const labelId = `import-${source}`;
 
   return (
+    <>
     <Modal open={open} onClose={onClose} labelledBy={labelId} wide>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -221,19 +233,19 @@ export function ImportDialog<S extends SourceType>({
                 <input
                   type="radio"
                   name="import-mode"
-                  checked={mode === 'replace'}
-                  onChange={() => setMode('replace')}
+                  checked={mode === 'append'}
+                  onChange={() => setMode('append')}
                 />
-                기존 데이터 교체
+                기존 데이터에 추가
               </label>
               <label className="flex items-center gap-1.5">
                 <input
                   type="radio"
                   name="import-mode"
-                  checked={mode === 'append'}
-                  onChange={() => setMode('append')}
+                  checked={mode === 'replace'}
+                  onChange={() => setMode('replace')}
                 />
-                기존 데이터에 추가
+                기존 데이터 교체
               </label>
             </fieldset>
           </>
@@ -250,7 +262,7 @@ export function ImportDialog<S extends SourceType>({
           <button
             type="button"
             disabled={!canCommit || busy}
-            onClick={commit}
+            onClick={handleCommitClick}
             className="rounded bg-slate-800 px-3 py-1.5 text-sm font-medium text-white enabled:hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {mode === 'replace' ? '교체 저장' : '추가 저장'}
@@ -258,5 +270,34 @@ export function ImportDialog<S extends SourceType>({
         </div>
       </div>
     </Modal>
+
+    {/* 교체 확인 */}
+    <Modal open={confirmReplace} onClose={() => setConfirmReplace(false)}>
+      <div className="space-y-4">
+        <h3 className="text-sm font-semibold text-slate-800">기존 데이터 교체</h3>
+        <p className="text-sm text-slate-600">
+          {source} 원본의 기존 데이터를 모두 지우고 지금 붙여넣은/가져온{' '}
+          {parsed?.rows.length ?? 0}행으로 바꿉니다. 되돌릴 수 없습니다. 정말로
+          교체할까요?
+        </p>
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => setConfirmReplace(false)}
+            className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+          >
+            취소
+          </button>
+          <button
+            type="button"
+            onClick={() => void commit()}
+            className="rounded bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-500"
+          >
+            교체
+          </button>
+        </div>
+      </div>
+    </Modal>
+    </>
   );
 }

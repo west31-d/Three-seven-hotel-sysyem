@@ -17,8 +17,10 @@ import type { CellMatrix } from './sheetMapping';
 const NO_LINE_RE = /^\d+$/;
 const GROUP_CODE_RE = /^[A-Za-z]\d{6,10}-\d{2,5}$/;
 const DATE_LINE_RE = /^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}$/;
+// 인원수 칸(TWN/SGL/TPL 등, 양식마다 개수가 다를 수 있어 몇 개든 유연하게 건너뛴다)
 const COUNT_LINE_RE = /^\d+$/;
-const AMOUNT_LINE_RE = /^[\d,]+$/;
+// 금액은 항상 천 단위 콤마가 있다(예: '55,000') - 콤마 없는 순수 숫자(인원수)와 구분하기 위함
+const AMOUNT_LINE_RE = /^\d{1,3}(,\d{3})+$/;
 // 예약번호 자리에 오는 '3/20 OK' 같은 승인일 메모(정규화에는 쓰이지 않음)
 const APPROVAL_NOTE_RE = /^\d{1,2}\/\d{1,2}\s*OK$/i;
 
@@ -92,13 +94,13 @@ export function reconstructHisCellLines(text: string): CellMatrix | null {
     if (bedTypeParts.length === 0) return null;
     const [bedType, bedType2 = null, bedType3 = null] = bedTypeParts;
 
-    // 첫 밤(날짜/TWN/SGL) 뒤에 Status(비고, '캔슬'/'변경 ...' 등 여러 줄일 수 있음)가 이어진다.
+    // 첫 밤(날짜 + 인원수 칸들) 뒤에 Status(비고, '캔슬'/'변경 ...' 등 여러 줄일 수 있음)가 이어진다.
+    // 인원수 칸은 TWN/SGL/TPL 등 양식마다 개수가 다를 수 있어, 숫자인 동안은 몇 개든 건너뛴다.
     // 예약번호(예: '3/20 OK')나 금액(예: '55,000')이 나오면 Status 는 끝난 것으로 본다.
     let status: string | null = null;
     if (cursor < lines.length && DATE_LINE_RE.test(lines[cursor])) {
       let statusCursor = cursor + 1; // 날짜
-      if (COUNT_LINE_RE.test(lines[statusCursor] ?? '')) statusCursor += 1; // TWN
-      if (COUNT_LINE_RE.test(lines[statusCursor] ?? '')) statusCursor += 1; // SGL
+      while (COUNT_LINE_RE.test(lines[statusCursor] ?? '')) statusCursor += 1; // TWN/SGL/TPL 등
       const statusParts: string[] = [];
       while (
         statusCursor < lines.length &&

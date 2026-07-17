@@ -42,9 +42,6 @@ function reservationStatusRowClass(status: string): string {
   if (status === '취소') {
     return 'bg-red-50/70 hover:bg-red-100/70';
   }
-  if (status === '변경') {
-    return 'bg-amber-50/70 hover:bg-amber-100/70';
-  }
   return 'odd:bg-white even:bg-slate-50/40 hover:bg-sky-50';
 }
 

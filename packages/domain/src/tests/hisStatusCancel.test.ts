@@ -140,7 +140,7 @@ YAGUCHI/MARIKO MS
 `;
 
 describe('HIS 셀 하나당 한 줄 붙여넣기: Status(캔슬 등) 인식', () => {
-  it('캔슬은 취소로, 변경 글자가 포함되면 변경으로, 그 외는 정상으로 처리된다', () => {
+  it('캔슬은 정확히 인식되고, 변경/대체신규 등은 정상으로 처리된다', () => {
     const result = parsePastedRows(PASTED_TEXT, 'HIS', 2026);
     expect(result.headerFailed).toBe(false);
 
@@ -169,16 +169,16 @@ describe('HIS 셀 하나당 한 줄 붙여넣기: Status(캔슬 등) 인식', ()
       예약상태: '정상',
     });
 
-    // 5번: 여러 줄짜리 '변경\n3TWN>>1TWN' -> '변경' 글자를 포함하므로 변경
+    // 5번: 여러 줄짜리 '변경\n3TWN>>1TWN' -> 캔슬이 아니므로 정상
     expect(byCode['H20260622-028']).toMatchObject({
       고객명: 'YAMAGUCHI/MASAYOSHI MR',
-      예약상태: '변경',
+      예약상태: '정상',
     });
 
-    // 9번: 3줄짜리 '대표자명 변경...' -> '변경' 글자를 포함하므로 변경
+    // 9번: 3줄짜리 '대표자명 변경...' -> 캔슬이 아니므로 정상
     expect(byCode['H20260629-087']).toMatchObject({
       고객명: 'YAGUCHI/MARIKO MS',
-      예약상태: '변경',
+      예약상태: '정상',
     });
   });
 });

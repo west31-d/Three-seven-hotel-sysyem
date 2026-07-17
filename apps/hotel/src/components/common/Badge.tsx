@@ -4,14 +4,12 @@ interface StatusBadgeProps {
   status: string;
 }
 
-/** 예약상태 배지: 취소=붉은색, 변경=노란색, 정상=녹색, 그 외 텍스트=중립 */
+/** 예약상태 배지: 취소=붉은색, 정상=녹색, 그 외 텍스트=중립 */
 export function StatusBadge({ status }: StatusBadgeProps): JSX.Element {
   let cls =
     'bg-slate-100 text-slate-700 ring-slate-200'; // 기타 텍스트 상태(한진 Remark 등)
   if (status === '취소') {
     cls = 'bg-red-50 text-red-700 ring-red-200';
-  } else if (status === '변경') {
-    cls = 'bg-amber-50 text-amber-700 ring-amber-200';
   } else if (status === '정상') {
     cls = 'bg-emerald-50 text-emerald-700 ring-emerald-200';
   }

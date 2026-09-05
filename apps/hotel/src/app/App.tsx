@@ -77,14 +77,7 @@ function DataMenu(): JSX.Element {
   );
 }
 
-interface AppProps {
-  /** 로그아웃 (로컬 모드면 사용하지 않음) */
-  onSignOut?: () => void;
-  /** 로그인 계정 (로컬 모드면 null) */
-  email?: string | null;
-}
-
-export function App({ onSignOut, email }: AppProps): JSX.Element {
+export function App(): JSX.Element {
   const { state } = useApp();
 
   return (
@@ -138,20 +131,6 @@ export function App({ onSignOut, email }: AppProps): JSX.Element {
             >
               사용법
             </a>
-            {email && onSignOut && (
-              <>
-                <span className="hidden text-xs text-slate-500 sm:inline">
-                  {email}
-                </span>
-                <button
-                  type="button"
-                  onClick={onSignOut}
-                  className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
-                >
-                  로그아웃
-                </button>
-              </>
-            )}
           </div>
         </div>
         <nav className="mx-auto max-w-7xl px-4">

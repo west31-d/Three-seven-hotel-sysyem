@@ -11,7 +11,7 @@
 import { IndexedDbReservationRepository } from './IndexedDbReservationRepository';
 import { SupabaseReservationRepository } from './SupabaseReservationRepository';
 import type { ReservationRepository } from './ReservationRepository';
-import { getSupabase, type Session } from './supabaseClient';
+import { getSupabase, getPublicSupabase, type Hotel, type Session } from './supabaseClient';
 
 export type StorageMode = 'supabase' | 'local';
 
@@ -26,8 +26,12 @@ export interface RepositoryHandle {
  * 세션에 맞는 저장소를 만든다.
  * session 이 null 이거나 Supabase 미설정이면 로컬 모드.
  */
-export function createRepository(session: Session | null): RepositoryHandle {
-  const sb = getSupabase();
+export function createRepository(session: Session | null, publicHotel?: Hotel | null): RepositoryHandle {
+  const sb = publicHotel ? getPublicSupabase() : getSupabase();
+
+  if (sb && publicHotel) {
+    return { repo: new SupabaseReservationRepository(sb, publicHotel.id), mode: 'supabase', hotel: publicHotel.name };
+  }
 
   if (sb && session && session.profile.hotel_id && session.hotel) {
     return {

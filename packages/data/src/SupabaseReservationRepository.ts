@@ -104,6 +104,7 @@ export class SupabaseReservationRepository implements ReservationRepository {
   ): Promise<void> {
     const payload = rows.map((r) => toRecord(r as never));
     const { error } = await this.sb.rpc('replace_source', {
+      p_hotel_id: this.hotelId,
       p_source: source,
       p_rows: payload,
     });
@@ -117,6 +118,7 @@ export class SupabaseReservationRepository implements ReservationRepository {
   ): Promise<void> {
     const payload = rows.map((r) => toRecord(r as never));
     const { error } = await this.sb.rpc('append_source', {
+      p_hotel_id: this.hotelId,
       p_source: source,
       p_rows: payload,
     });

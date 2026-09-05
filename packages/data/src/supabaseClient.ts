@@ -41,6 +41,16 @@ export function isSupabaseConfigured(): boolean {
 }
 
 let client: SupabaseClient | null = null;
+let publicClient: SupabaseClient | null = null;
+
+/** 이전 로그인 세션을 사용하지 않는 공개 예약 사이트 전용 클라이언트. */
+export function getPublicSupabase(): SupabaseClient | null {
+  if (!isSupabaseConfigured()) return null;
+  if (!publicClient) publicClient = createClient(url as string, anonKey as string, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'travel-public' },
+  });
+  return publicClient;
+}
 
 /** 설정되어 있으면 Supabase 클라이언트, 아니면 null */
 export function getSupabase(): SupabaseClient | null {

@@ -28,6 +28,7 @@ import type {
 } from '@travel/domain';
 import type {
   RawRowMap,
+  Hotel,
   ReservationRepository,
   Session,
   StorageMode,
@@ -114,25 +115,27 @@ export function AppProvider({
   children,
   session = null,
   repository,
+  publicHotel,
 }: {
   children: ReactNode;
   /** 로그인 세션 (없으면 로컬 모드) */
   session?: Session | null;
   /** 테스트에서 저장소를 직접 주입할 때 사용 */
   repository?: ReservationRepository;
+  publicHotel?: Hotel | null;
 }): JSX.Element {
   // 세션에 맞는 저장소 선택: 로그인 + Supabase 설정 → 공유 DB, 아니면 로컬(IndexedDB)
-  const handle = useMemo(() => createRepository(session), [session]);
+  const handle = useMemo(() => createRepository(session, publicHotel), [session, publicHotel]);
   const repoRef = useRef<ReservationRepository>(repository ?? handle.repo);
   const hotelRef = useRef<string | null>(handle.hotel);
-  const supportRepoRef = useRef<SupportRepository>(createSupportRepository(session));
+  const supportRepoRef = useRef<SupportRepository>(createSupportRepository(session, publicHotel));
 
   // 세션이 바뀌면(로그인/로그아웃) 저장소를 갈아끼운다
   useEffect(() => {
     repoRef.current = repository ?? handle.repo;
     hotelRef.current = handle.hotel;
-    supportRepoRef.current = createSupportRepository(session);
-  }, [handle, repository, session]);
+    supportRepoRef.current = createSupportRepository(session, publicHotel);
+  }, [handle, repository, session, publicHotel]);
 
   const [state, setState] = useState<AppState>({
     ready: false,

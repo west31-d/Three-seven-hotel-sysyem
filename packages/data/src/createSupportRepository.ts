@@ -6,10 +6,11 @@
 import { IndexedDbSupportRepository } from './IndexedDbSupportRepository';
 import { SupabaseSupportRepository } from './SupabaseSupportRepository';
 import type { SupportRepository } from './SupportRepository';
-import { getSupabase, type Session } from './supabaseClient';
+import { getSupabase, getPublicSupabase, type Hotel, type Session } from './supabaseClient';
 
-export function createSupportRepository(session: Session | null): SupportRepository {
-  const sb = getSupabase();
+export function createSupportRepository(session: Session | null, publicHotel?: Hotel | null): SupportRepository {
+  const sb = publicHotel ? getPublicSupabase() : getSupabase();
+  if (sb && publicHotel) return new SupabaseSupportRepository(sb, publicHotel.id);
   if (sb && session && session.profile.hotel_id) {
     return new SupabaseSupportRepository(sb, session.profile.hotel_id);
   }
